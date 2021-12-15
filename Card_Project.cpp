@@ -2,8 +2,10 @@
 // Name        : Card_Project.cpp
 // Author      : Mike Filburn
 // Version     :
-// Copyright   : Your copyright notice
-// Description : Hello World in C++, Ansi-style
+// Copyright   : Mit License
+// Description : Optical Character Recogniton for Magic The Gathering Cards.
+//		 Used with OpenVC. Program finds and uses first camera found
+//		 on a windows system. 
 //============================================================================
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
@@ -34,14 +36,15 @@ void find(vector<Point>  &, Mat &, char);
 int toggle = 0;
 
 DWORD WINAPI myThread(LPVOID myCounter){
+	//Setup for windows serial communication. No need to change any of thses values.
 	HANDLE hSerial; 																							// windows handle that is empty. needed for windows serial data transfer
-	hSerial = CreateFile("COM9", GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0); 	//setting up the port
+	hSerial = CreateFile("COM9", GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
 	DCB dcb; 																									// empty DCB. needed for serial data transfer
 	memset(&dcb, 0, sizeof(dcb));
-	dcb.BaudRate = CBR_9600; //the rate of transfer. normal is CBR_9600	     115200	//
-	dcb.ByteSize = 8; //never change												//
-	dcb.Parity = NOPARITY; // never change											//
-	dcb.StopBits = ONESTOPBIT; //never change										////something to do with creating memmory for the dcb. Do not know wtf this is
+	dcb.BaudRate = CBR_9600; 
+	dcb.ByteSize = 8; 
+	dcb.Parity = NOPARITY;
+	dcb.StopBits = ONESTOPBIT; //never change because it has something to do with creating memmory for the dcb.
 	COMMTIMEOUTS timeout;
 	timeout.ReadIntervalTimeout = MAXDWORD;
 	timeout.ReadTotalTimeoutConstant = 0;
@@ -55,40 +58,39 @@ DWORD WINAPI myThread(LPVOID myCounter){
 		if(toggle == 0){
 			    ////Read data sent on the serial port (tie pins 2 and 3. 1 is top left looking at the db9 male pins)//////////////////																	//
 				BYTE Byte;																		//
-				DWORD dwBytesTransferred;														//
-				if(!GetCommState(hSerial, &dcb)){cout<<"here is the issue\n";}					//
-				SetCommMask(hSerial, EV_RXCHAR);												//
-				ReadFile(hSerial, &Byte, 1, &dwBytesTransferred, 0);     						//
+				DWORD dwBytesTransferred;									
+				if(!GetCommState(hSerial, &dcb)){cout<<"here is the issue\n";}					
+				SetCommMask(hSerial, EV_RXCHAR);								
+				ReadFile(hSerial, &Byte, 1, &dwBytesTransferred, 0);     					
 				if(Byte == '3'){toggle = 3;Byte = 0;}
 				if(Byte == '5'){toggle = 5;Byte = 0;}
-				//////////////////////////////////////////////////////////////////////////////////
 		}
 
 		if(toggle == 1){
-    				char a = 'a'; // just some daata to be transmitted serially					//
-    				DWORD byteswritten; //just something to hold what was transmitted				//
-    				WriteFile(hSerial, &a, 1, &byteswritten, NULL); //writes out to the serial port.//
+    				char a = 'a'; // just some daata to be transmitted serially					
+    				DWORD byteswritten; //just something to hold what was transmitted				
+    				WriteFile(hSerial, &a, 1, &byteswritten, NULL); //writes out to the serial port.
     				toggle = 0;
 		}
 
 		if(toggle == 2){
-    				char a = 'b'; // just some daata to be transmitted serially					//
-    				DWORD byteswritten; //just something to hold what was transmitted				//
-    				WriteFile(hSerial, &a, 1, &byteswritten, NULL); //writes out to the serial port.//
+    				char a = 'b'; // just some daata to be transmitted serially					
+    				DWORD byteswritten; //just something to hold what was transmitted				
+    				WriteFile(hSerial, &a, 1, &byteswritten, NULL); //writes out to the serial port.
     				toggle = 0;
 		}
 
 		if(toggle == 4){
-					char a = 'c'; // just some daata to be transmitted serially					//
-					DWORD byteswritten; //just something to hold what was transmitted				//
-					WriteFile(hSerial, &a, 1, &byteswritten, NULL); //writes out to the serial port.//
+					char a = 'c'; // just some daata to be transmitted serially					
+					DWORD byteswritten; //just something to hold what was transmitted				
+					WriteFile(hSerial, &a, 1, &byteswritten, NULL); //writes out to the serial port.
 					toggle = 0;
 		}
 
 		if(toggle == 6){
-					char a = 'd'; // just some daata to be transmitted serially					//
-					DWORD byteswritten; //just something to hold what was transmitted				//
-					WriteFile(hSerial, &a, 1, &byteswritten, NULL); //writes out to the serial port.//
+					char a = 'd'; // just some daata to be transmitted serially					
+					DWORD byteswritten; //just something to hold what was transmitted				
+					WriteFile(hSerial, &a, 1, &byteswritten, NULL); //writes out to the serial port.
 					toggle = 0;
 		}
 
@@ -184,13 +186,13 @@ int main() {
 	letterLoad("c:/Card_Sorter_Create/new__z/new__z.txt", poly__z);
 	letterLoad("c:/Card_Sorter_Create/apple/apple.txt", poly__apple);
 //global Matrixes
-	Mat image_feed;
-	Mat image_feed_gray;
-	Mat canny;
-	Mat image_feed_gray_blur1;
-	Mat image_feed_gray_blur2;
-	Mat canny_morph;
-	Mat sobel;
+	Mat image_feed;		   // full color image
+	Mat image_feed_gray;       // gray scale image
+	Mat canny;		   // edge detection image
+	Mat image_feed_gray_blur1; // blur of edge image
+	Mat image_feed_gray_blur2; // second blur of edge image
+	Mat canny_morph;           // canny algorithm again, dulls edges
+	Mat sobel;                 // 
 	Mat sobelImage;
 	Mat sobelThresholded;
 // camera set up stuff
@@ -236,8 +238,9 @@ while(1){
 		bilateralFilter(image_feed_gray_blur1, image_feed_gray_roi , 3, 19, 3);
 		bilateralFilter(image_feed_gray_roi, image_feed_gray_blur1, 3, 19, 3);
 		bilateralFilter(image_feed_gray_blur1, image_feed_gray_roi , 3, 19, 3);
-		Sobel(image_feed_gray_roi, image_feed_gray_blur1, CV_16S,1,0);
-		Sobel(image_feed_gray_roi, image_feed_gray_blur2, CV_16S,0,1);
+		//sobel needed due to white/black text issue.
+		Sobel(image_feed_gray_roi, image_feed_gray_blur1, CV_16S,1,0); //produce gradient in x direction
+		Sobel(image_feed_gray_roi, image_feed_gray_blur2, CV_16S,0,1); //produce gradient in y direction
 		sobel = abs(image_feed_gray_blur1)+abs(image_feed_gray_blur2);
 		double sobmin, sobmax;
 		minMaxLoc(sobel, & sobmin, &sobmax);
@@ -263,19 +266,18 @@ while(1){
 			int positions_counter = 0;
 			char letters[contours.size()];
 
-			for(unsigned int i=0; i < contours.size(); i++){												//do below for all detected contours
+			for(unsigned int i = 0; i < contours.size(); i++){												//do below for all detected contours
 
-						vector<Point> poly;																	//blank vector to hold the detected polygon
+					vector<Point> poly;																	//blank vector to hold the detected polygon
 				        vector<Point> poly2;
-
-						double arc_diff        = 9999;
-						double area_diff       = 9999;
+					double arc_diff        = 9999;
+					double area_diff       = 9999;
 				        int longest_x;
 				        int longest_y;
 
-					    double result;
+					double result;
 
-					    char letter = '!';
+					char letter = '!';
 
 					approxPolyDP(contours[i], poly, 0, false);
 					//a
@@ -401,179 +403,179 @@ while(1){
 							       }
 							    }
 					//l
-							   		   result = matchShapes(poly, poly__l, CV_CONTOURS_MATCH_I1, 0);
-							   		   if(result < 1){
-							   			   arc_diff = arcLength(poly, true);
-							   		    if(arc_diff > 130 && arc_diff < 155 ){
-							   		    	 area_diff = abs(contourArea(poly,true));
-							   		    	 if(area_diff > 550 && area_diff < 750 ){
-							   		    	 sum(poly, longest_x, longest_y);
-							   			        if(	longest_x > 48 && longest_x < 56 &&	longest_y > 4 && longest_y < 13){letter = 'l'; poly2 = poly__l;}
-							   		    	 }
-							   		       }
-							   		    }
+							   result = matchShapes(poly, poly__l, CV_CONTOURS_MATCH_I1, 0);
+							   if(result < 1){
+								   arc_diff = arcLength(poly, true);
+							    if(arc_diff > 130 && arc_diff < 155 ){
+								 area_diff = abs(contourArea(poly,true));
+								 if(area_diff > 550 && area_diff < 750 ){
+								 sum(poly, longest_x, longest_y);
+									if(	longest_x > 48 && longest_x < 56 &&	longest_y > 4 && longest_y < 13){letter = 'l'; poly2 = poly__l;}
+								 }
+							       }
+							    }
 					//m
-							   		   result = matchShapes(poly, poly__m, CV_CONTOURS_MATCH_I1, 0);
-							   		   if(result < 1){
-							   			   arc_diff = arcLength(poly, true);
-							   		    if(arc_diff > 290 && arc_diff < 330 ){
-							   		    	 area_diff = abs(contourArea(poly,true));
-							   		    	 if(area_diff > 1250 && area_diff < 1700 ){
-							   		    	 sum(poly, longest_x, longest_y);
-							   			        if(	longest_x > 5 && longest_x < 10 &&	longest_y > 21 && longest_y < 50){letter = 'm'; poly2 = poly__m;}
-							   		    	 }
-							   		       }
-							   		    }
+							   result = matchShapes(poly, poly__m, CV_CONTOURS_MATCH_I1, 0);
+							   if(result < 1){
+								   arc_diff = arcLength(poly, true);
+							    if(arc_diff > 290 && arc_diff < 330 ){
+								 area_diff = abs(contourArea(poly,true));
+								 if(area_diff > 1250 && area_diff < 1700 ){
+								 sum(poly, longest_x, longest_y);
+									if(	longest_x > 5 && longest_x < 10 &&	longest_y > 21 && longest_y < 50){letter = 'm'; poly2 = poly__m;}
+								 }
+							       }
+							    }
 					//n
-							   		   result = matchShapes(poly, poly__n, CV_CONTOURS_MATCH_I1, 0);
-							   		   if(result < 1){
-							   			   arc_diff = arcLength(poly, true);
-							   		    if(arc_diff > 200 && arc_diff < 230 ){
-							   		    	 area_diff = abs(contourArea(poly,true));
-							   		    	 if(area_diff > 800 && area_diff < 1080 ){
-							   		    	 sum(poly, longest_x, longest_y);
-							   			        if(	longest_x > 4 && longest_x < 9 &&	longest_y > 27 && longest_y < 32){letter = 'n'; poly2 = poly__n;}
-							   		    	 }
-							   		       }
-							   		    }
+							   result = matchShapes(poly, poly__n, CV_CONTOURS_MATCH_I1, 0);
+							   if(result < 1){
+								   arc_diff = arcLength(poly, true);
+							    if(arc_diff > 200 && arc_diff < 230 ){
+								 area_diff = abs(contourArea(poly,true));
+								 if(area_diff > 800 && area_diff < 1080 ){
+								 sum(poly, longest_x, longest_y);
+									if(	longest_x > 4 && longest_x < 9 &&	longest_y > 27 && longest_y < 32){letter = 'n'; poly2 = poly__n;}
+								 }
+							       }
+							    }
 					//o
-							   		   result = matchShapes(poly, poly__o, CV_CONTOURS_MATCH_I1, 0);
-							   		   if(result < 0.2){
-							   			   arc_diff = arcLength(poly, true);
-							   		    if(arc_diff > 125 && arc_diff < 147 ){
-							   		    	 area_diff = abs(contourArea(poly,true));
-							   		    	 if(area_diff > 1200 && area_diff < 1490 ){
-							   		    	 sum(poly, longest_x, longest_y);
-							   			        if(	longest_x > 13 && longest_x < 24 &&	longest_y > 13 && longest_y < 27){letter = 'o'; poly2 = poly__o;}
-							   		    	 }
-							   		       }
-							   		    }
+							   result = matchShapes(poly, poly__o, CV_CONTOURS_MATCH_I1, 0);
+							   if(result < 0.2){
+								   arc_diff = arcLength(poly, true);
+							    if(arc_diff > 125 && arc_diff < 147 ){
+								 area_diff = abs(contourArea(poly,true));
+								 if(area_diff > 1200 && area_diff < 1490 ){
+								 sum(poly, longest_x, longest_y);
+									if(	longest_x > 13 && longest_x < 24 &&	longest_y > 13 && longest_y < 27){letter = 'o'; poly2 = poly__o;}
+								 }
+							       }
+							    }
 					//p
-							   		   result = matchShapes(poly, poly__p, CV_CONTOURS_MATCH_I1, 0);
-							   		   if(result < 0.8){
-							   			   arc_diff = arcLength(poly, true);
-							   		    if(arc_diff > 170 && arc_diff < 195 ){
-							   		    	 area_diff = abs(contourArea(poly,true));
-							   		    	 if(area_diff > 1400 && area_diff < 1630 ){
-							   		    	 sum(poly, longest_x, longest_y);
-							   			        if(	longest_x > 5 && longest_x < 25 &&	longest_y > 4 && longest_y < 17){letter = 'p'; poly2 = poly__p;}
-							   		    	 }
-							   		       }
-							   		    }
+							   result = matchShapes(poly, poly__p, CV_CONTOURS_MATCH_I1, 0);
+							   if(result < 0.8){
+								   arc_diff = arcLength(poly, true);
+							    if(arc_diff > 170 && arc_diff < 195 ){
+								 area_diff = abs(contourArea(poly,true));
+								 if(area_diff > 1400 && area_diff < 1630 ){
+								 sum(poly, longest_x, longest_y);
+									if(	longest_x > 5 && longest_x < 25 &&	longest_y > 4 && longest_y < 17){letter = 'p'; poly2 = poly__p;}
+								 }
+							       }
+							    }
 					//q
 					//r
-							   		   result = matchShapes(poly, poly__r, CV_CONTOURS_MATCH_I1, 0);
-							   		   if(result < 0.8){
-							   			   arc_diff = arcLength(poly, true);
-							   		    if(arc_diff > 130 && arc_diff < 155 ){
-							   		    	 area_diff = abs(contourArea(poly,true));
-							   		    	 if(area_diff > 475 && area_diff < 650 ){
-							   		    	 sum(poly, longest_x, longest_y);
-							   			        if(	longest_x > 4 && longest_x < 8 &&	longest_y > 4 && longest_y < 14){letter = 'r'; poly2 = poly__r;}
-							   		    	 }
-							   		       }
-							   		    }
+							   result = matchShapes(poly, poly__r, CV_CONTOURS_MATCH_I1, 0);
+							   if(result < 0.8){
+								   arc_diff = arcLength(poly, true);
+							    if(arc_diff > 130 && arc_diff < 155 ){
+								 area_diff = abs(contourArea(poly,true));
+								 if(area_diff > 475 && area_diff < 650 ){
+								 sum(poly, longest_x, longest_y);
+									if(	longest_x > 4 && longest_x < 8 &&	longest_y > 4 && longest_y < 14){letter = 'r'; poly2 = poly__r;}
+								 }
+							       }
+							    }
 					//s
-							   		   result = matchShapes(poly, poly__r, CV_CONTOURS_MATCH_I1, 0);
-							   		   if(result < 0.8){
-							   			   arc_diff = arcLength(poly, true);
-							   		    if(arc_diff > 180 && arc_diff < 205 ){
-							   		    	 area_diff = abs(contourArea(poly,true));
-							   		    	 if(area_diff > 580 && area_diff < 710 ){
-							   		    	 sum(poly, longest_x, longest_y);
-							   			        if(	longest_x > 18 && longest_x < 40 &&	longest_y > 4 && longest_y < 24){letter = 's'; poly2 = poly__s;}
-							   		    	 }
-							   		       }
-							   		    }
+							   result = matchShapes(poly, poly__r, CV_CONTOURS_MATCH_I1, 0);
+							   if(result < 0.8){
+								   arc_diff = arcLength(poly, true);
+							    if(arc_diff > 180 && arc_diff < 205 ){
+								 area_diff = abs(contourArea(poly,true));
+								 if(area_diff > 580 && area_diff < 710 ){
+								 sum(poly, longest_x, longest_y);
+									if(	longest_x > 18 && longest_x < 40 &&	longest_y > 4 && longest_y < 24){letter = 's'; poly2 = poly__s;}
+								 }
+							       }
+							    }
 					//t
-							   		   result = matchShapes(poly, poly__t, CV_CONTOURS_MATCH_I1, 0);
-							   		   if(result < 0.9){
-							   			   arc_diff = arcLength(poly, true);
-							   		    if(arc_diff > 125 && arc_diff < 160 ){
-							   		    	 area_diff = abs(contourArea(poly,true));
-							   		    	 if(area_diff > 510 && area_diff < 690 ){
-							   		    	 sum(poly, longest_x, longest_y);
-							   			        if(	longest_x > 7 && longest_x < 14 &&	longest_y > 7 && longest_y < 16){letter = 't'; poly2 = poly__t;}
-							   		    	 }
-							   		       }
-							   		    }
+							   result = matchShapes(poly, poly__t, CV_CONTOURS_MATCH_I1, 0);
+							   if(result < 0.9){
+								   arc_diff = arcLength(poly, true);
+							    if(arc_diff > 125 && arc_diff < 160 ){
+								 area_diff = abs(contourArea(poly,true));
+								 if(area_diff > 510 && area_diff < 690 ){
+								 sum(poly, longest_x, longest_y);
+									if(	longest_x > 7 && longest_x < 14 &&	longest_y > 7 && longest_y < 16){letter = 't'; poly2 = poly__t;}
+								 }
+							       }
+							    }
 					//u
-							   		   result = matchShapes(poly, poly__u, CV_CONTOURS_MATCH_I1, 0);
-							   		   if(result < 0.5){
-							   			   arc_diff = arcLength(poly, true);
-							   		    if(arc_diff > 190 && arc_diff < 220 ){
-							   		    	 area_diff = abs(contourArea(poly,true));
-							   		    	 if(area_diff > 850 && area_diff < 1075 ){
-							   		    	 sum(poly, longest_x, longest_y);
-							   			        if(	longest_x > 30 && longest_x < 37 &&	longest_y > 6 && longest_y < 37){letter = 'u'; poly2 = poly__u;}
-							   		    	 }
-							   		       }
-							   		    }
+							   result = matchShapes(poly, poly__u, CV_CONTOURS_MATCH_I1, 0);
+							   if(result < 0.5){
+								   arc_diff = arcLength(poly, true);
+							    if(arc_diff > 190 && arc_diff < 220 ){
+								 area_diff = abs(contourArea(poly,true));
+								 if(area_diff > 850 && area_diff < 1075 ){
+								 sum(poly, longest_x, longest_y);
+									if(	longest_x > 30 && longest_x < 37 &&	longest_y > 6 && longest_y < 37){letter = 'u'; poly2 = poly__u;}
+								 }
+							       }
+							    }
 					//v
-							   		   result = matchShapes(poly, poly__v, CV_CONTOURS_MATCH_I1, 0);
-							   		   if(result < 0.5){
-							   			   arc_diff = arcLength(poly, true);
-							   		    if(arc_diff > 155 && arc_diff < 175 ){
-							   		    	 area_diff = abs(contourArea(poly,true));
-							   		    	 if(area_diff > 540 && area_diff < 600 ){
-							   		    	 sum(poly, longest_x, longest_y);
-							   			        if(	longest_x > 0 && longest_x < 10 &&	longest_y > 0 && longest_y < 17){letter = 'v'; poly2 = poly__v;}
-							   		    	 }
-							   		       }
-							   		    }
+							   result = matchShapes(poly, poly__v, CV_CONTOURS_MATCH_I1, 0);
+							   if(result < 0.5){
+								   arc_diff = arcLength(poly, true);
+							    if(arc_diff > 155 && arc_diff < 175 ){
+								 area_diff = abs(contourArea(poly,true));
+								 if(area_diff > 540 && area_diff < 600 ){
+								 sum(poly, longest_x, longest_y);
+									if(	longest_x > 0 && longest_x < 10 &&	longest_y > 0 && longest_y < 17){letter = 'v'; poly2 = poly__v;}
+								 }
+							       }
+							    }
 					//w
-							   		   result = matchShapes(poly, poly__w, CV_CONTOURS_MATCH_I1, 0);
-							   		   if(result < 0.5){
-							   			   arc_diff = arcLength(poly, true);
-							   		    if(arc_diff > 265 && arc_diff < 290 ){
-							   		    	 area_diff = abs(contourArea(poly,true));
-							   		    	 if(area_diff > 950 && area_diff < 1300 ){
-							   		    	 sum(poly, longest_x, longest_y);
-							   			        if(	longest_x > 1 && longest_x < 6 &&	longest_y > 10 && longest_y < 39){letter = 'w'; poly2 = poly__w;}
-							   		    	 }
-							   		       }
-							   		    }
+							   result = matchShapes(poly, poly__w, CV_CONTOURS_MATCH_I1, 0);
+							   if(result < 0.5){
+								   arc_diff = arcLength(poly, true);
+							    if(arc_diff > 265 && arc_diff < 290 ){
+								 area_diff = abs(contourArea(poly,true));
+								 if(area_diff > 950 && area_diff < 1300 ){
+								 sum(poly, longest_x, longest_y);
+									if(	longest_x > 1 && longest_x < 6 &&	longest_y > 10 && longest_y < 39){letter = 'w'; poly2 = poly__w;}
+								 }
+							       }
+							    }
 					//x
-							   		   result = matchShapes(poly, poly__x, CV_CONTOURS_MATCH_I1, 0);
-							   		   if(result < 0.2){
-							   			   arc_diff = arcLength(poly, true);
-							   		    if(arc_diff > 190 && arc_diff < 210 ){
-							   		    	 area_diff = abs(contourArea(poly,true));
-							   		    	 if(area_diff > 650 && area_diff < 750 ){
-							   		    	 sum(poly, longest_x, longest_y);
-							   			        if(	longest_x > 1 && longest_x < 40 &&	longest_y > 10 && longest_y < 25){letter = 'x'; poly2 = poly__x;}
-							   		    	 }
-							   		       }
-							   		    }
+							   result = matchShapes(poly, poly__x, CV_CONTOURS_MATCH_I1, 0);
+							   if(result < 0.2){
+								   arc_diff = arcLength(poly, true);
+							    if(arc_diff > 190 && arc_diff < 210 ){
+								 area_diff = abs(contourArea(poly,true));
+								 if(area_diff > 650 && area_diff < 750 ){
+								 sum(poly, longest_x, longest_y);
+									if(	longest_x > 1 && longest_x < 40 &&	longest_y > 10 && longest_y < 25){letter = 'x'; poly2 = poly__x;}
+								 }
+							       }
+							    }
 					//y
-							   		   result = matchShapes(poly, poly__y, CV_CONTOURS_MATCH_I1, 0);
-							   		   if(result < 0.5){
-							   			   arc_diff = arcLength(poly, true);
-							   		    if(arc_diff > 185 && arc_diff < 219 ){
-							   		    	 area_diff = abs(contourArea(poly,true));
-							   		    	 if(area_diff > 600 && area_diff < 800 ){
-							   		    	 sum(poly, longest_x, longest_y);
-							   			        if(	longest_x > 1 && longest_x < 5 &&	longest_y > 12 && longest_y < 18){letter = 'y'; poly2 = poly__y;}
-							   		    	 }
-							   		       }
-							   		    }
+							   result = matchShapes(poly, poly__y, CV_CONTOURS_MATCH_I1, 0);
+							   if(result < 0.5){
+								   arc_diff = arcLength(poly, true);
+							    if(arc_diff > 185 && arc_diff < 219 ){
+								 area_diff = abs(contourArea(poly,true));
+								 if(area_diff > 600 && area_diff < 800 ){
+								 sum(poly, longest_x, longest_y);
+									if(	longest_x > 1 && longest_x < 5 &&	longest_y > 12 && longest_y < 18){letter = 'y'; poly2 = poly__y;}
+								 }
+							       }
+							    }
 					//z
-							   		   result = matchShapes(poly, poly__z, CV_CONTOURS_MATCH_I1, 0);
-							   		   if(result < 0.5){
-							   			   arc_diff = arcLength(poly, true);
-							   		    if(arc_diff > 155 && arc_diff < 180 ){
-							   		    	 area_diff = abs(contourArea(poly,true));
-							   		    	 if(area_diff > 490 && area_diff < 590 ){
-							   		    	 sum(poly, longest_x, longest_y);
-							   			        if(	longest_x > 1 && longest_x < 35 &&	longest_y > 8 && longest_y < 18){letter = 'z'; poly2 = poly__z;}
-							   		    	 }
-							   		       }
-							   		    }//end of z
+							   result = matchShapes(poly, poly__z, CV_CONTOURS_MATCH_I1, 0);
+							   if(result < 0.5){
+								   arc_diff = arcLength(poly, true);
+							    if(arc_diff > 155 && arc_diff < 180 ){
+								 area_diff = abs(contourArea(poly,true));
+								 if(area_diff > 490 && area_diff < 590 ){
+								 sum(poly, longest_x, longest_y);
+									if(	longest_x > 1 && longest_x < 35 &&	longest_y > 8 && longest_y < 18){letter = 'z'; poly2 = poly__z;}
+								 }
+							       }
+							    }//end of z
 
 if(!poly2.empty()){
-	find(poly, image_feed, letter); 			//draws the contout/letter over the image
-    Rect position;								//blank rect used below
-	position = boundingRect(poly);				//bounding rect of the drew contour/letter
+	find(poly, image_feed, letter); 		//draws the contout/letter over the image
+    Rect position;					//blank rect used below
+	position = boundingRect(poly);			//bounding rect of the drew contour/letter
 	positions[positions_counter] = position.x; 	//each contout/letter has a "x" position. This just stores them in an array
 	letters[positions_counter] = letter;	   	//each contour/letter has a char value. This just stores them in an array
 	positions_counter = positions_counter + 1; 	//each contour/letter added increases the array. This will be used later. positions_counter is an int.
@@ -583,8 +585,8 @@ if(!poly2.empty()){
 //this block is placing all contours/letters found in order from left to right by x value.
 for(int i = 0 ; i < positions_counter; i++){			// loop for every char, x.position, stored from above
   for (int j = 0 ; j < positions_counter; j++){			// loop within a loop to compare all char, x.positions against each other
-   if (positions[i]<=positions[j]){						//
-	  int temp;											//
+   if (positions[i]<=positions[j]){						
+	  int temp;											
 	  temp = positions[i];
 	  positions[i] = positions[j];
 	  positions[j] = temp;
@@ -629,7 +631,7 @@ for(int i = 0; i < positions_counter; i++){
  }//end of !contours.empty
 
 
-		   rectangle(image_feed, Rect(x, y, w, h), CV_RGB(255,0,255),1);		//white rect to user can see where the detection spot is
+		   rectangle(image_feed, Rect(x, y, w, h), CV_RGB(255,0,255),1);		//purple rect to user can see where the detection spot is
 		   putText(image_feed, found_card_name,Point(10,10) ,FONT_HERSHEY_COMPLEX_SMALL, 0.8,Scalar(0,0,255),1);
 		   imshow("Image Feed",image_feed);
 		   found_card_name.clear();
@@ -638,14 +640,14 @@ for(int i = 0; i < positions_counter; i++){
 
     }//end of picture take and analyze loop. after ends we are done with the card <5
 
-	              fstream outfile;
-	              outfile.open("C:/final_char.txt", fstream::in | fstream::out | fstream::app);
+      fstream outfile;
+      outfile.open("C:/final_char.txt", fstream::in | fstream::out | fstream::app);
 
-	  	  		  for(int i=0; i < positions_counter_final; i++){
-	  	  			  outfile << final_word_char[i];
-	  	  		  }
-	  	  		  outfile << "\t";
-	  	  		  outfile.close();
+		  for(int i=0; i < positions_counter_final; i++){
+			  outfile << final_word_char[i];
+		  }
+		  outfile << "\t";
+		  outfile.close();
 
 //these below are all to reset for next card
 	 size = 0;
